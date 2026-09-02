@@ -15,7 +15,7 @@ body{background:#080808}.shell{width:min(1180px,calc(100% - 48px))}
 @media(max-width:680px){.shell{width:min(100% - 28px,1180px)}.app-toolbar{height:58px;padding-left:13px}.app-brand i,.app-brand small,.toolbar-action{display:none}.unified-hero{padding:64px 0 54px;gap:26px}.app-intro h1{font-size:clamp(39px,11vw,54px)}.app-proof{grid-template-columns:1fr}.app-proof div{display:flex;align-items:center;justify-content:space-between;gap:18px}.app-proof span{margin:0;text-align:right}.unified-hero>.scanner{padding:17px;border-radius:13px}.unified-hero .url-row{display:block;padding:5px}.unified-hero .url-row .button{width:100%;justify-content:center;margin-top:4px}.context-head h2{font-size:38px}.outcome-grid{grid-template-columns:1fr}.outcome-card{min-height:185px}.outcome-card h3{margin-top:34px}.open-source-inner,.unified-footer-top,.unified-footer-bottom{display:grid;grid-template-columns:1fr}.open-source-inner{padding:24px}.unified-footer-links{justify-content:flex-start}.unified-footer-bottom{gap:8px}.scope-ribbon{padding:16px}.unified-context{padding-top:72px}}
 @media(prefers-reduced-motion:reduce){.outcome-card{transition:none}}
 
-/* Product-first polish inspired by the compact, AMOLED Atlas interface. */
+/* Compact AMOLED product shell. */
 :root{--ui-border:#1e1e1e;--ui-subtle:#141414;--ui-raised:#0f0f0f;--ui-hover:rgba(255,255,255,.05);--ui-blue:#3291ff}
 body{background:#000}
 .aurora{opacity:.2;filter:blur(58px);background:radial-gradient(ellipse 52% 34% at 50% 44%,rgba(255,255,255,.12),transparent 72%);animation:product-halo 8s ease-in-out infinite alternate}
@@ -142,3 +142,170 @@ body{background:#000}
   .scan-results .scan-result-actions{margin-right:18px;margin-left:18px}
 }
 @media(prefers-reduced-motion:reduce){.aurora,.nav-pill{animation:none;transition:none}}
+
+/* Sona UI motion system, adapted for the dependency-free static build. */
+:root{
+  --sona-spatial:cubic-bezier(.16,1,.3,1);
+  --sona-feedback:cubic-bezier(.2,.8,.2,1);
+  --sona-focus:#64a8ff;
+}
+.brand-wordmark{
+  font-family:Inter,Arial,sans-serif!important;
+  font-weight:500!important;
+  letter-spacing:-.025em!important;
+  text-transform:none!important;
+}
+.app-brand .brand-wordmark{font-size:13px!important}
+.footer-closure{font-family:Inter,Arial,sans-serif!important}
+.unified-footer-brand .brand-wordmark{font-size:18px!important;line-height:1.1}
+.unified-footer-identity{display:flex;flex-direction:column;align-items:flex-start}
+.unified-footer-bottom{font-family:'DM Mono',monospace!important}
+
+.sona-spotlight,.outcome-card,.scope-ribbon,.open-source-inner,.scan-action{
+  --sona-x:-400px;
+  --sona-y:-400px;
+  --sona-spotlight-opacity:0;
+  position:relative;
+  isolation:isolate;
+  overflow:hidden;
+}
+.sona-spotlight:after,.outcome-card:after,.scope-ribbon:after,.open-source-inner:after,.scan-action:after{
+  content:'';
+  position:absolute;
+  z-index:0;
+  inset:-1px;
+  pointer-events:none;
+  opacity:var(--sona-spotlight-opacity);
+  background:radial-gradient(320px circle at var(--sona-x) var(--sona-y),rgba(255,255,255,.095),transparent 72%);
+  transition:opacity .2s ease-out;
+}
+.open-source-inner{overflow:visible}
+.open-source-inner:after{border-radius:inherit}
+.sona-spotlight>*,.outcome-card>*,.scope-ribbon>*,.open-source-inner>*,.scan-action>*{position:relative;z-index:1}
+
+[data-sona-magnetic]{
+  --sona-magnetic-x:0px;
+  --sona-magnetic-y:0px;
+  position:relative;
+  overflow:hidden;
+  transform:translate3d(var(--sona-magnetic-x),var(--sona-magnetic-y),0);
+  transition:transform .46s var(--sona-spatial),background-color .18s,border-color .18s,color .18s;
+  will-change:transform;
+}
+[data-sona-magnetic]:active{transform:translate3d(var(--sona-magnetic-x),var(--sona-magnetic-y),0) scale(.97)}
+.sona-ripple{
+  position:absolute;
+  z-index:0;
+  width:10px;
+  height:10px;
+  margin:-5px 0 0 -5px;
+  border-radius:50%;
+  pointer-events:none;
+  background:currentColor;
+  opacity:.13;
+  transform:scale(0);
+  animation:sona-ripple .55s var(--sona-spatial) forwards;
+}
+[data-sona-magnetic]>*:not(.sona-ripple){position:relative;z-index:1}
+@keyframes sona-ripple{70%{opacity:.08}to{opacity:0;transform:scale(28)}}
+
+.workspace-tabs{position:relative}
+.workspace-tabs button{
+  display:flex;
+  align-items:center;
+  padding:0 11px;
+  border:0;
+  border-bottom:2px solid transparent;
+  background:transparent;
+  color:#555;
+  font:10px Inter,Arial,sans-serif;
+  cursor:pointer;
+  transition:color .16s,background .24s var(--sona-spatial),padding .3s var(--sona-spatial);
+}
+.workspace-tabs button:hover{color:#bcbcbc;background:#0d0d0d}
+.workspace-tabs button.active{padding-inline:14px;border-bottom-color:#ededed;background:#111;color:#ddd}
+.workspace-tabs button:focus-visible,.button:focus-visible,.toolbar-action:focus-visible,.icon-btn:focus-visible,.unified-footer-links a:focus-visible,.unified-footer-links button:focus-visible{
+  outline:2px solid var(--sona-focus);
+  outline-offset:2px;
+}
+
+.score-tabs{position:relative;isolation:isolate}
+.score-tabs:before{
+  content:'';
+  position:absolute;
+  z-index:-1;
+  top:0;
+  left:0;
+  width:var(--sona-tab-width,0);
+  height:var(--sona-tab-height,0);
+  border-radius:6px;
+  background:#e9e9e5;
+  transform:translateX(var(--sona-tab-x,0));
+  transition:width .34s var(--sona-spatial),transform .34s var(--sona-spatial),height .2s ease;
+}
+.score-tabs button.active,.score-tabs button:hover{background:transparent!important}
+.score-tabs button.active{color:#111!important}
+
+.overlay{
+  transition:opacity .2s ease,visibility 0s linear .24s!important;
+}
+.overlay.show{transition:opacity .18s ease,visibility 0s!important}
+.overlay .dialog{
+  opacity:0;
+  transform:translate3d(var(--sona-dialog-x,0),var(--sona-dialog-y,20px),0) scale(.975)!important;
+  transform-origin:var(--sona-dialog-origin,center);
+  transition:opacity .2s ease,transform .38s var(--sona-spatial)!important;
+}
+.overlay.show .dialog{opacity:1;transform:translate3d(0,0,0) scale(1)!important}
+#compare-dialog .dialog{--sona-dialog-x:28px;--sona-dialog-y:0;--sona-dialog-origin:right center}
+#report-dialog .dialog,#guardrail-dialog .dialog{--sona-dialog-y:32px;--sona-dialog-origin:center bottom}
+.icon-btn{display:grid!important;place-items:center;line-height:1;transition:transform .28s var(--sona-spatial),background .18s,border-color .18s}
+.icon-btn:hover{transform:rotate(90deg) scale(1.06);border-color:#666;background:#1b1b1b}
+
+.sona-word-mask{display:inline-block;overflow:hidden;vertical-align:bottom;padding-bottom:.08em;margin-bottom:-.08em}
+.sona-word{display:inline-block;opacity:0;transform:translateY(115%) rotate(2deg);transition:opacity .35s ease,transform .66s var(--sona-spatial)}
+.sona-split-visible .sona-word{opacity:1;transform:none}
+.sona-word-space{display:inline-block;width:.24em}
+.sona-dialog-open{overflow:hidden}
+
+.sona-dropdown{position:relative}
+.sona-dropdown-trigger{gap:8px}
+.sona-dropdown-trigger span{display:inline-block;transition:transform .3s var(--sona-spatial)}
+.sona-dropdown.open .sona-dropdown-trigger span{transform:rotate(180deg)}
+.sona-dropdown-menu{
+  position:absolute;
+  z-index:30;
+  right:0;
+  bottom:calc(100% + 8px);
+  width:230px;
+  padding:6px;
+  border:1px solid #2d2d2d;
+  border-radius:10px;
+  background:rgba(12,12,12,.96);
+  box-shadow:0 20px 60px #000b,inset 0 1px rgba(255,255,255,.04);
+  backdrop-filter:blur(18px);
+  opacity:0;
+  visibility:hidden;
+  transform:translateY(7px) scale(.965);
+  transform-origin:right bottom;
+  transition:opacity .16s ease,transform .3s var(--sona-spatial),visibility 0s linear .3s;
+}
+.sona-dropdown.open .sona-dropdown-menu{opacity:1;visibility:visible;transform:none;transition:opacity .16s ease,transform .3s var(--sona-spatial),visibility 0s}
+.sona-dropdown-menu a{display:block;padding:10px 11px;border-radius:7px;color:#d7d7d2;text-align:left;transition:background .18s,color .18s}
+.sona-dropdown-menu a:hover,.sona-dropdown-menu a:focus-visible{outline:0;background:#1c1c1c;color:#fff}
+.sona-dropdown-menu b{display:block;font-size:11px;font-weight:500}
+.sona-dropdown-menu small{display:block;margin-top:2px;color:#747470;font-size:9px}
+
+@media(max-width:680px){
+  .unified-footer-brand .brand-wordmark{font-size:16px!important}
+  .unified-footer-links{margin-top:7px}
+  .sona-dropdown-menu{right:auto;left:0;transform-origin:left bottom}
+}
+@media(prefers-reduced-motion:reduce){
+  [data-sona-magnetic]{transform:none!important;transition:none!important}
+  .sona-ripple{display:none}
+  .sona-word{opacity:1;transform:none;transition:none}
+  .overlay .dialog{transition:opacity .12s ease!important;transform:none!important}
+  .score-tabs:before,.workspace-tabs button{transition:none}
+  .sona-dropdown-menu,.sona-dropdown-trigger span{transition:none}
+}
