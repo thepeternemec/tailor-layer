@@ -118,6 +118,8 @@ Open [http://localhost:4173](http://localhost:4173). Repository scans read publi
 | `score-guide.js` | Technical explanation of the scoring model and its limitations |
 | `toolbar.js` | Application navigation and entry animations |
 | `footer-motion.js` | Reduced-motion-aware interface transitions |
+| `SECURITY.md` | Private vulnerability reporting and project security scope |
+| `CODE_OF_CONDUCT.md` | Community expectations for reviews and contributions |
 
 ## Contributing
 

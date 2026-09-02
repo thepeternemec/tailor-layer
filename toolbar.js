@@ -12,6 +12,11 @@
     });
   });
 
+  const toolbar = document.querySelector('.app-toolbar');
+  const syncToolbar = () => toolbar?.classList.toggle('scrolled', window.scrollY > 18);
+  syncToolbar();
+  window.addEventListener('scroll', syncToolbar, { passive: true });
+
   const reveal = new IntersectionObserver(entries => {
     entries.forEach(entry => {
       if (!entry.isIntersecting) return;
