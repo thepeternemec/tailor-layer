@@ -113,10 +113,14 @@
       return [{ ...item, host, edit: item.id === 'endpoint' ? item.edit.replace('<hostname>', host) : item.edit }];
     });
   };
-  const actionCard = (item, repo, branch, revision, index) => {
-    const source = githubPath(repo, revision || branch, item.file) + '#L' + item.line;
-    const edit = githubPath(repo, branch, item.file, 'edit') + '#L' + item.line;
-    return '<article class="scan-action" data-severity="' + item.severity + '"><div class="scan-action-top"><div><span class="scan-action-priority">' + priority(item) + ' · ' + item.severity + '</span><h4>' + escape(item.title) + '</h4><a class="scan-source" href="' + source + '" target="_blank" rel="noopener">' + escape(item.file) + ':' + item.line + ' ↗</a></div><a class="button ghost" href="' + edit + '" target="_blank" rel="noopener">Edit file on GitHub ↗</a></div><div class="scan-action-body"><div><p><b>Why this matters.</b> ' + escape(item.why) + '</p><p><b>Recommended change.</b> ' + escape(item.fix) + '</p><details class="scan-match"><summary>Show the matched line</summary><code>' + escape(item.excerpt) + '</code></details></div><div class="scan-edit"><div class="scan-edit-head"><b>Copy-ready edit pattern</b><button class="scan-copy" type="button" data-copy-edit="' + index + '">Copy edit</button></div><pre><code>' + escape(item.edit) + '</code></pre></div></div></article>';
+  const actionCard = (item, repo, branch, revision, index, pasted) => {
+    const source = pasted ? '' : githubPath(repo, revision || branch, item.file) + '#L' + item.line;
+    const edit = pasted ? '' : githubPath(repo, branch, item.file, 'edit') + '#L' + item.line;
+    const sourceControl = pasted
+      ? '<span class="scan-source scan-source-local">' + escape(item.file) + ':' + item.line + '</span>'
+      : '<a class="scan-source" href="' + source + '" target="_blank" rel="noopener">' + escape(item.file) + ':' + item.line + ' ↗</a>';
+    const editControl = pasted ? '' : '<a class="button ghost" href="' + edit + '" target="_blank" rel="noopener">Edit file on GitHub ↗</a>';
+    return '<article class="scan-action" data-severity="' + item.severity + '"><div class="scan-action-top"><div><span class="scan-action-priority">' + priority(item) + ' · ' + item.severity + '</span><h4>' + escape(item.title) + '</h4>' + sourceControl + '</div>' + editControl + '</div><div class="scan-action-body"><div><p><b>Why this matters.</b> ' + escape(item.why) + '</p><p><b>Recommended change.</b> ' + escape(item.fix) + '</p><details class="scan-match"><summary>Show the matched line</summary><code>' + escape(item.excerpt) + '</code></details></div><div class="scan-edit"><div class="scan-edit-head"><b>Copy-ready edit pattern</b><button class="scan-copy" type="button" data-copy-edit="' + index + '">Copy edit</button></div><pre><code>' + escape(item.edit) + '</code></pre></div></div></article>';
   };
   const planText = (repo, findings, files, branch, revision) => {
     const ordered = reviewItems(findings);
@@ -126,6 +130,7 @@
     return lines.join('\n');
   };
   const render = (repo, findings, files, branch, source, revision) => {
+    const pasted = source === 'Pasted artifact';
     const result = score(findings);
     const ordered = reviewItems(findings);
     const changes = ordered.filter(item => item.severity !== 'INFO');
@@ -133,16 +138,18 @@
     const blockers = changes.filter(item => item.severity === 'CRITICAL' || item.severity === 'HIGH');
     const headline = blockers.length ? 'Make ' + blockers.length + ' change' + (blockers.length === 1 ? '' : 's') + ' before installing.' : changes.length ? 'Review ' + changes.length + ' change' + (changes.length === 1 ? '' : 's') + ' before production.' : 'No blocking patterns found. Lock down the first run.';
     const explanation = blockers.length ? 'Tailor Layer ordered the highest-risk edits first and attached each one to the exact source line.' : changes.length ? 'The repository can be evaluated in isolation after the recommended scope changes are reviewed.' : 'The static scan is clear, but runtime authority, release integrity, and outbound access still need explicit limits.';
-    const cards = ordered.length ? ordered.slice(0, 12).map((item, index) => actionCard(item, repo, branch, revision, index)).join('') : '<div class="scan-action" data-severity="INFO"><div class="scan-action-top"><div><span class="scan-action-priority">NO MATCHED RISKY PATTERNS</span><h4>Move directly to safe first-run controls</h4></div></div><div class="scan-action-body"><div><p>Tailor Layer checked agent instructions, execution paths, credentials, package pinning, permissions, and declared endpoints.</p></div><div class="scan-edit"><div class="scan-edit-head"><b>Recommended next move</b></div><pre><code>Pin the reviewed commit.\nStart without credentials.\nAllowlist only required hosts.\nRun in a disposable workspace.</code></pre></div></div></div>';
-    return '<div class="scan-result-head"><div class="scan-result-score"><strong>' + result.value + '</strong><span>/ 100 · ' + result.grade + '</span></div><div><div class="scan-result-meta">AUTOMATED REVIEW · ' + escape(repo) + ' · ' + escape((revision || branch).slice(0, 12)) + '</div><h2>' + headline + '</h2><p>' + explanation + ' This is a static review, not proof of runtime safety.</p></div><span class="scan-result-verdict">' + escape(result.decision.toUpperCase()) + '</span></div><div class="scan-result-metrics"><div class="scan-result-metric"><b>' + files + '</b><span>FILES REVIEWED</span></div><div class="scan-result-metric"><b>' + changes.length + '</b><span>RECOMMENDED EDITS</span></div><div class="scan-result-metric"><b>' + boundaries.length + '</b><span>HOSTS TO VERIFY</span></div></div><section><div class="scan-plan-head"><h3>Recommended edit plan</h3><p>One queue, ordered by risk. Every item combines source evidence with the change to make.</p></div><div class="scan-action-list">' + cards + '</div></section><section class="scan-launch-plan"><div class="scan-plan-head"><h3>Safe first-run plan</h3><p>The reviewed commit and discovered hosts are already attached. Confirm the remaining limits before launch.</p></div><div class="scan-defaults"><div class="scan-default"><span>01 · PIN</span><b>Keep the reviewed version</b><p>Record commit ' + escape((revision || branch).slice(0, 12)) + ' before installation.</p></div><div class="scan-default"><span>02 · ISOLATE</span><b>Use a disposable workspace</b><p>Start without production data, credentials, or host-wide access.</p></div><div class="scan-default"><span>03 · OBSERVE</span><b>Compare behavior to the plan</b><p>Stop if commands, destinations, or requested authority drift.</p></div></div></section><div class="scan-result-actions"><button class="button ghost" type="button" id="scan-again">Scan another repository</button><div><button class="button ghost" type="button" id="copy-fix-plan">Copy complete edit plan</button><button class="button" type="button" id="use-first-run">Complete launch plan →</button></div></div><p class="scan-result-meta" style="margin:14px 0 0">Source: ' + escape(source) + '</p>';
+    const cards = ordered.length ? ordered.slice(0, 12).map((item, index) => actionCard(item, repo, branch, revision, index, pasted)).join('') : '<div class="scan-action" data-severity="INFO"><div class="scan-action-top"><div><span class="scan-action-priority">NO MATCHED RISKY PATTERNS</span><h4>Move directly to safe first-run controls</h4></div></div><div class="scan-action-body"><div><p>Tailor Layer checked agent instructions, execution paths, credentials, package pinning, permissions, and declared endpoints.</p></div><div class="scan-edit"><div class="scan-edit-head"><b>Recommended next move</b></div><pre><code>Pin the reviewed version.\nStart without credentials.\nAllowlist only required hosts.\nRun in a disposable workspace.</code></pre></div></div></div>';
+    const reviewedUnit = pasted ? 'ARTIFACT REVIEWED' : 'FILES REVIEWED';
+    const pinCopy = pasted ? 'Keep fingerprint ' + escape((revision || branch).slice(0, 16)) + ' with the approved artifact.' : 'Record commit ' + escape((revision || branch).slice(0, 12)) + ' before installation.';
+    return '<div class="scan-result-head"><div class="scan-result-score"><strong data-sona-count="' + result.value + '">' + result.value + '</strong><span>/ 100 · ' + result.grade + '</span></div><div><div class="scan-result-meta">AUTOMATED REVIEW · ' + escape(repo) + ' · ' + escape((revision || branch).slice(0, 16)) + '</div><h2>' + headline + '</h2><p>' + explanation + ' This is a static review, not proof of runtime safety.</p></div><span class="scan-result-verdict">' + escape(result.decision.toUpperCase()) + '</span></div><div class="scan-result-metrics"><div class="scan-result-metric"><b>' + files + '</b><span>' + reviewedUnit + '</span></div><div class="scan-result-metric"><b>' + changes.length + '</b><span>RECOMMENDED EDITS</span></div><div class="scan-result-metric"><b>' + boundaries.length + '</b><span>HOSTS TO VERIFY</span></div></div><section><div class="scan-plan-head"><h3>Recommended edit plan</h3><p>One queue, ordered by risk. Every item combines source evidence with the change to make.</p></div><div class="scan-action-list">' + cards + '</div></section><section class="scan-launch-plan"><div class="scan-plan-head"><h3>Safe first-run plan</h3><p>The reviewed version and discovered hosts are already attached. Confirm the remaining limits before launch.</p></div><div class="scan-defaults"><div class="scan-default"><span>01 · PIN</span><b>Keep the reviewed version</b><p>' + pinCopy + '</p></div><div class="scan-default"><span>02 · ISOLATE</span><b>Use a disposable workspace</b><p>Start without production data, credentials, or host-wide access.</p></div><div class="scan-default"><span>03 · OBSERVE</span><b>Compare behavior to the plan</b><p>Stop if commands, destinations, or requested authority drift.</p></div></div></section><div class="scan-result-actions"><button class="button ghost" type="button" id="scan-again">Review another input</button><div><button class="button ghost" type="button" id="copy-fix-plan">Copy complete edit plan</button><button class="button" type="button" id="use-first-run">Complete launch plan →</button></div></div><p class="scan-result-meta" style="margin:14px 0 0">Source: ' + escape(source) + '</p>';
   };
   const show = (repo, findings, files, branch, source, revision) => {
-    window.dispatchEvent(new CustomEvent('tailorlayer:review-ready', {
-      detail: { repo, findings, files, branch, source, revision, score: score(findings) }
-    }));
     results.innerHTML = render(repo, findings, files, branch, source, revision);
     results.hidden = false;
     requestAnimationFrame(() => results.classList.add('ready'));
+    window.dispatchEvent(new CustomEvent('tailorlayer:review-ready', {
+      detail: { repo, findings, files, branch, source, revision, score: score(findings) }
+    }));
     results.querySelectorAll('[data-copy-edit]').forEach(button => button.onclick = async event => {
       const item = reviewItems(findings)[Number(button.dataset.copyEdit)];
       try { await navigator.clipboard.writeText(item.edit); event.currentTarget.textContent = 'Copied'; } catch { event.currentTarget.textContent = 'Copy unavailable'; }
@@ -160,6 +167,14 @@
     if (!match) throw Error('Enter a GitHub repository URL, for example github.com/owner/repository.');
     return { owner: match[1], repo: match[2].replace(/\.git$/i, '') };
   };
+  const fingerprint = value => {
+    let hash = 2166136261;
+    for (let index = 0; index < value.length; index += 1) {
+      hash ^= value.charCodeAt(index);
+      hash = Math.imul(hash, 16777619);
+    }
+    return 'artifact-' + (hash >>> 0).toString(16).padStart(8, '0');
+  };
   const allowed = /^(?:[^/]+\/)*(?:SKILL\.md|README(?:\.md)?|AGENTS\.md|CLAUDE\.md|Dockerfile|.+\.(?:md|mdx|json|ya?ml|toml|ini|cfg|conf|txt|mcp|[cm]?js|tsx?|py|sh|ps1))$/i;
 
   const scanner = $('#scanner');
@@ -171,31 +186,54 @@
   results.hidden = true;
   results.setAttribute('aria-live', 'polite');
   scanner.insertAdjacentElement('afterend', results);
-  scanner.querySelector('.scan-panel>p').textContent = 'Paste one public GitHub URL. Tailor Layer finds agent-facing files, traces risky behavior, and builds a prioritized edit plan.';
+  scanner.querySelector('.scan-panel>p').textContent = 'Paste a public GitHub URL or the artifact itself. Tailor Layer detects the format, reviews the content, and builds the prioritized edit and launch plan automatically.';
   scanner.querySelector('.preview strong').textContent = 'One scan. Evidence, fixes, and launch limits.';
   scanner.querySelector('.preview small').textContent = 'exact files · suggested edits · safe first run';
   scanner.querySelector('.grade').textContent = '→';
-  input.placeholder = 'https://github.com/owner/repository';
-  input.setAttribute('aria-label', 'Public GitHub repository URL');
-  $('#scan-button').textContent = 'Scan repository →';
+  input.placeholder = 'Paste a GitHub URL, skill, MCP config, prompt, or agent instructions';
+  input.setAttribute('aria-label', 'GitHub repository URL or artifact text');
+  $('#scan-button').textContent = 'Review now →';
   const steps = $$('.scan-step');
   const stage = index => steps.forEach((step, i) => step.className = 'scan-step ' + (i < index ? 'done' : i === index ? 'active' : ''));
   const finish = () => {
     scanner.classList.remove('scanning');
     $('#scan-button').disabled = false;
-    $('#scan-button').textContent = 'Scan repository →';
+    $('#scan-button').textContent = 'Review now →';
     setTimeout(() => steps.forEach(step => step.className = 'scan-step'), 1000);
   };
-  $('#scan-button').onclick = async () => {
+  const resizeInput = () => {
+    input.style.height = 'auto';
+    input.style.height = Math.min(Math.max(input.scrollHeight, 42), 180) + 'px';
+  };
+  const review = async () => {
+    if ($('#scan-button').disabled) return;
     try {
       const value = input.value.trim();
+      if (!value) throw Error('Paste a GitHub repository URL or artifact to begin.');
       results.classList.remove('ready');
       results.hidden = true;
       scanner.classList.add('scanning');
       $('#scan-button').disabled = true;
-      $('#scan-button').textContent = 'Scanning…';
+      $('#scan-button').textContent = 'Reviewing…';
       stage(0);
-      status.textContent = 'Mapping repository artifacts…';
+      const isRepository = /(?:github\.com[/:])[^/\s]+\/[^/\s#?]+/i.test(value);
+      status.textContent = isRepository ? 'GitHub link detected · mapping artifacts…' : 'Artifact detected · reading instructions…';
+      if (!isRepository) {
+        if (value.length < 24) throw Error('Paste a little more artifact content so the review has enough context.');
+        const artifactId = fingerprint(value);
+        stage(1);
+        await wait(180);
+        status.textContent = 'Tracing instructions, authority, and outbound hosts…';
+        stage(2);
+        const findings = analyze(value, 'Pasted artifact');
+        await wait(220);
+        stage(3);
+        status.textContent = 'Building suggested edits and safe first-run limits…';
+        await wait(180);
+        show('Pasted artifact', findings, 1, 'local', 'Pasted artifact', artifactId);
+        status.textContent = 'Complete review ready · ' + score(findings).value + '/100';
+        return;
+      }
       const repo = parse(value);
       let branch = 'main';
       let revision = branch;
@@ -243,14 +281,26 @@
       status.textContent = 'Building prioritized edits…';
       await wait(250);
       show(repo.owner + '/' + repo.repo, findings, readable.length, branch, source, revision);
-      status.textContent = 'Edit plan ready · ' + score(findings).value + '/100';
+      status.textContent = 'Complete review ready · ' + score(findings).value + '/100';
     } catch (error) {
       status.textContent = error.message || 'The scan could not be completed.';
     } finally {
       finish();
     }
   };
-  input.onkeydown = event => { if (event.key === 'Enter') $('#scan-button').click(); };
+  $('#scan-button').onclick = review;
+  input.addEventListener('input', resizeInput);
+  input.addEventListener('paste', () => {
+    status.textContent = 'Input detected · starting review…';
+    setTimeout(() => { resizeInput(); review(); }, 120);
+  });
+  input.onkeydown = event => {
+    if (event.key === 'Enter' && (event.metaKey || event.ctrlKey)) {
+      event.preventDefault();
+      review();
+    }
+  };
+  resizeInput();
 })();
 
 (() => {

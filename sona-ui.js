@@ -4,9 +4,13 @@
   const reduceMotion = matchMedia('(prefers-reduced-motion: reduce)').matches;
   const $ = (selector, root = document) => root.querySelector(selector);
   const $$ = (selector, root = document) => [...root.querySelectorAll(selector)];
+  const includeRoot = (selector, root = document) => [
+    ...(root.nodeType === 1 && root.matches(selector) ? [root] : []),
+    ...$$(selector, root)
+  ];
 
   const enhanceInteractiveElements = (root = document) => {
-    $$('.button, .toolbar-github, .icon-btn', root).forEach(element => {
+    includeRoot('.button, .toolbar-github, .icon-btn', root).forEach(element => {
       if (element.dataset.sonaMagnetic !== undefined) return;
       element.dataset.sonaMagnetic = '';
     });
@@ -51,6 +55,45 @@
     target.append(ripple);
     ripple.addEventListener('animationend', () => ripple.remove(), { once: true });
   });
+
+  const aurora = $('.aurora');
+  const scrollProgress = document.createElement('div');
+  scrollProgress.className = 'sona-scroll-progress';
+  scrollProgress.setAttribute('aria-hidden', 'true');
+  document.body.append(scrollProgress);
+  if (aurora && !reduceMotion) {
+    const mesh = { x: 50, y: 26, targetX: 50, targetY: 26, moving: false };
+    const drawMesh = () => {
+      mesh.x += (mesh.targetX - mesh.x) * .085;
+      mesh.y += (mesh.targetY - mesh.y) * .085;
+      aurora.style.setProperty('--sona-mesh-x', `${mesh.x.toFixed(2)}%`);
+      aurora.style.setProperty('--sona-mesh-y', `${mesh.y.toFixed(2)}%`);
+      if (Math.abs(mesh.targetX - mesh.x) + Math.abs(mesh.targetY - mesh.y) > .04) {
+        requestAnimationFrame(drawMesh);
+      } else {
+        mesh.moving = false;
+      }
+    };
+    document.addEventListener('pointermove', event => {
+      if (event.pointerType !== 'mouse') return;
+      mesh.targetX = Math.max(8, Math.min(92, event.clientX / innerWidth * 100));
+      mesh.targetY = Math.max(8, Math.min(86, event.clientY / innerHeight * 100));
+      if (!mesh.moving) {
+        mesh.moving = true;
+        requestAnimationFrame(drawMesh);
+      }
+    }, { passive: true });
+  }
+
+  const updateScrollMotion = () => {
+    const maximum = Math.max(1, document.documentElement.scrollHeight - innerHeight);
+    const progress = Math.max(0, Math.min(1, scrollY / maximum));
+    scrollProgress.style.setProperty('--sona-scroll-progress', progress);
+    if (aurora && !reduceMotion) aurora.style.setProperty('--sona-mesh-shift', `${Math.min(70, scrollY * .035)}px`);
+  };
+  addEventListener('scroll', updateScrollMotion, { passive: true });
+  addEventListener('resize', updateScrollMotion, { passive: true });
+  updateScrollMotion();
 
   const spotlightSelector = '.sona-spotlight, .outcome-card, .scope-ribbon, .open-source-inner, .scan-action';
   document.addEventListener('pointermove', event => {
@@ -100,6 +143,51 @@
     });
   }, { threshold: .2 });
   $$('.context-head h2, .open-source-inner h2').forEach(splitHeading);
+
+  const revealObserver = new IntersectionObserver(entries => {
+    entries.forEach(entry => {
+      if (!entry.isIntersecting) return;
+      entry.target.classList.add('sona-in');
+      revealObserver.unobserve(entry.target);
+    });
+  }, { threshold: .1, rootMargin: '0px 0px -7% 0px' });
+  const revealElements = (root = document) => {
+    const selector = '.context-head > *, .outcome-card, .scope-ribbon, .open-source-inner > *, .footer-closure .unified-footer-top > *, .scan-results > *';
+    includeRoot(selector, root).forEach((element, index) => {
+      if (element.classList.contains('sona-scroll-item')) return;
+      element.classList.add('sona-scroll-item');
+      element.style.setProperty('--sona-reveal-delay', `${Math.min(index % 4 * 70, 210)}ms`);
+      if (reduceMotion) element.classList.add('sona-in');
+      else revealObserver.observe(element);
+    });
+  };
+  revealElements();
+
+  const animateCounters = (root = document) => {
+    includeRoot('[data-sona-count]', root).forEach(element => {
+      if (element.dataset.sonaCounted !== undefined) return;
+      element.dataset.sonaCounted = '';
+      const target = Number(element.dataset.sonaCount);
+      if (!Number.isFinite(target) || reduceMotion) return;
+      const started = performance.now();
+      const tick = now => {
+        const progress = Math.min(1, (now - started) / 720);
+        const eased = 1 - Math.pow(1 - progress, 4);
+        element.textContent = String(Math.round(target * eased));
+        if (progress < 1) requestAnimationFrame(tick);
+      };
+      element.textContent = '0';
+      requestAnimationFrame(tick);
+    });
+  };
+  animateCounters();
+  addEventListener('tailorlayer:review-ready', () => requestAnimationFrame(() => {
+    const results = $('#scan-results');
+    if (!results) return;
+    enhanceInteractiveElements(results);
+    revealElements(results);
+    animateCounters(results);
+  }));
 
   const updateFluidIndicator = list => {
     const active = $('.active', list);
