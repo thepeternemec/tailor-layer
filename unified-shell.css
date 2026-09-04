@@ -310,28 +310,90 @@ body{background:#000}
   .sona-dropdown-menu,.sona-dropdown-trigger span{transition:none}
 }
 
-/* Sona UI v2 — interactive mesh, scroll choreography, and readable product density. */
+/* Sona UI v2 — blue-horizon aurora, scroll choreography, and readable product density. */
 html,body{overflow-x:clip}
 .aurora{
-  --sona-mesh-x:50%;
-  --sona-mesh-y:26%;
-  --sona-mesh-shift:0px;
-  opacity:.78!important;
-  filter:blur(42px)!important;
+  --sona-horizon-x:50%;
+  --sona-horizon-drift:0px;
+  --sona-horizon-shift:0px;
+  display:block;
+  opacity:1!important;
+  filter:none!important;
   background:
-    radial-gradient(ellipse 34% 25% at var(--sona-mesh-x) var(--sona-mesh-y),rgba(43,133,255,.32),transparent 72%),
-    radial-gradient(ellipse 32% 24% at 18% 48%,rgba(35,79,210,.18),transparent 70%),
-    radial-gradient(ellipse 30% 23% at 82% 72%,rgba(0,153,255,.13),transparent 72%),
-    radial-gradient(ellipse 58% 36% at 50% 62%,rgba(255,255,255,.07),transparent 76%)!important;
+    radial-gradient(ellipse 72% 29% at var(--sona-horizon-x) 69%,rgba(16,95,255,.19),transparent 73%),
+    radial-gradient(ellipse 46% 18% at 50% 76%,rgba(62,169,255,.11),transparent 76%),
+    linear-gradient(180deg,transparent 0 50%,rgba(4,28,74,.04) 67%,rgba(0,11,32,.22) 100%)!important;
   mix-blend-mode:screen;
-  transform:translate3d(0,var(--sona-mesh-shift),0) scale(1.06);
-  animation:sona-mesh-breathe 11s ease-in-out infinite alternate!important;
+  transform:none;
+  animation:none!important;
   transition:opacity .4s ease;
-  will-change:transform,background;
+  will-change:background;
 }
-@keyframes sona-mesh-breathe{
-  from{transform:translate3d(0,var(--sona-mesh-shift),0) scale(1.03);filter:blur(46px)}
-  to{transform:translate3d(0,calc(var(--sona-mesh-shift) + 22px),0) scale(1.13);filter:blur(38px)}
+.aurora::before{
+  content:"";
+  position:absolute;
+  right:-14%;
+  bottom:17.5vh;
+  left:-14%;
+  height:1px;
+  background:linear-gradient(90deg,transparent 4%,rgba(26,93,218,.08) 18%,rgba(53,141,255,.46) 40%,rgba(151,221,255,.78) 50%,rgba(53,141,255,.46) 60%,rgba(26,93,218,.08) 82%,transparent 96%);
+  box-shadow:0 0 9px rgba(124,205,255,.42),0 0 34px rgba(40,126,255,.3),0 0 110px rgba(17,82,224,.28);
+  transform:translate3d(var(--sona-horizon-drift),var(--sona-horizon-shift),0) scaleX(.94);
+  animation:sona-horizon-pulse 7s ease-in-out infinite alternate;
+  will-change:opacity,transform;
+}
+.aurora::after{
+  content:"";
+  position:absolute;
+  right:-10%;
+  bottom:-18vh;
+  left:-10%;
+  height:50vh;
+  border-radius:50% 50% 0 0;
+  background:radial-gradient(ellipse 58% 70% at var(--sona-horizon-x) 0%,rgba(39,131,255,.23),rgba(8,54,157,.09) 40%,transparent 72%);
+  filter:blur(30px);
+  transform:translate3d(0,var(--sona-horizon-shift),0);
+}
+.aurora span{
+  --aurora-a:.34;
+  display:block!important;
+  position:absolute!important;
+  bottom:17.5vh!important;
+  width:12vw!important;
+  min-width:92px!important;
+  height:59vh!important;
+  border-radius:50% 50% 10% 10%!important;
+  opacity:.76;
+  background:linear-gradient(to top,rgba(17,91,255,.58) 0%,rgba(43,139,255,.42) 24%,rgba(92,194,255,.2) 53%,rgba(69,147,255,.08) 74%,transparent 100%)!important;
+  filter:blur(17px)!important;
+  transform-origin:50% 100%!important;
+  transform:translate3d(var(--sona-horizon-drift),var(--sona-horizon-shift),0) scaleY(var(--aurora-a))!important;
+  animation:none!important;
+  will-change:transform,opacity;
+}
+.aurora span:nth-child(3n+1){background:linear-gradient(to top,rgba(16,68,224,.54),rgba(39,129,255,.3) 42%,rgba(101,208,255,.13) 68%,transparent 100%)!important;filter:blur(20px)!important}
+.aurora span:nth-child(3n+2){opacity:.64;filter:blur(15px)!important}
+.aurora span:nth-child(1){left:-6%;--aurora-a:.14}
+.aurora span:nth-child(2){left:0%;--aurora-a:.2}
+.aurora span:nth-child(3){left:6%;--aurora-a:.28}
+.aurora span:nth-child(4){left:12%;--aurora-a:.36}
+.aurora span:nth-child(5){left:18%;--aurora-a:.47}
+.aurora span:nth-child(6){left:24%;--aurora-a:.59}
+.aurora span:nth-child(7){left:30%;--aurora-a:.7}
+.aurora span:nth-child(8){left:36%;--aurora-a:.81}
+.aurora span:nth-child(9){left:42%;--aurora-a:.9}
+.aurora span:nth-child(10){left:48%;--aurora-a:.88}
+.aurora span:nth-child(11){left:54%;--aurora-a:.79}
+.aurora span:nth-child(12){left:60%;--aurora-a:.68}
+.aurora span:nth-child(13){left:66%;--aurora-a:.56}
+.aurora span:nth-child(14){left:72%;--aurora-a:.45}
+.aurora span:nth-child(15){left:78%;--aurora-a:.34}
+.aurora span:nth-child(16){left:84%;--aurora-a:.26}
+.aurora span:nth-child(17){left:90%;--aurora-a:.19}
+.aurora span:nth-child(18){left:96%;--aurora-a:.13}
+@keyframes sona-horizon-pulse{
+  from{opacity:.52;transform:translate3d(var(--sona-horizon-drift),var(--sona-horizon-shift),0) scaleX(.91)}
+  to{opacity:.9;transform:translate3d(var(--sona-horizon-drift),calc(var(--sona-horizon-shift) - 3px),0) scaleX(1.02)}
 }
 .sona-scroll-progress{
   position:fixed;
@@ -376,6 +438,9 @@ html,body{overflow-x:clip}
 .unified-hero .live{font-size:11px!important;line-height:1.5}
 .unified-hero .preview strong{font-size:13px!important}
 .unified-hero .preview small{font-size:10px!important;line-height:1.45}
+.unified-hero .app-proof b{color:rgba(239,245,255,.76)!important;text-shadow:0 1px 14px rgba(0,0,0,.9)}
+.unified-hero .app-proof span{color:rgba(200,218,245,.58)!important;text-shadow:0 1px 14px rgba(0,0,0,.9)}
+.unified-hero .app-proof div+div:before{color:rgba(174,202,240,.42)}
 .panel-label,.scan-scope,.window-project,.workspace-tabs button{font-size:11px!important}
 .workspace-tabs button{padding-inline:13px}
 .app-proof b,.app-proof span{font-size:11px!important}
@@ -403,6 +468,9 @@ html,body{overflow-x:clip}
 .scan-results.ready{box-shadow:0 28px 100px -40px #000,0 0 80px -62px rgba(50,145,255,.9)}
 
 @media(max-width:680px){
+  .aurora span{width:18vw!important;min-width:72px!important;height:53vh!important}
+  .aurora::before,.aurora span{bottom:13vh!important}
+  .aurora::after{bottom:-22vh}
   .unified-hero .url-row textarea{width:100%;font-size:16px}
   .unified-hero .scan-panel>p{font-size:14px!important}
   .context-head p{font-size:15px!important}
@@ -410,7 +478,8 @@ html,body{overflow-x:clip}
   .sona-scroll-progress{height:2px}
 }
 @media(prefers-reduced-motion:reduce){
-  .aurora{animation:none!important;transform:none!important}
+  .aurora,.aurora::before,.aurora span{animation:none!important}
+  .aurora span{transform:translate3d(0,0,0) scaleY(var(--aurora-a))!important}
   .sona-scroll-item{opacity:1;filter:none;transform:none;transition:none}
   .sona-scroll-progress{display:none}
 }

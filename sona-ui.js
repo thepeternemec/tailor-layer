@@ -57,30 +57,54 @@
   });
 
   const aurora = $('.aurora');
+  if (aurora) {
+    while (aurora.children.length < 18) aurora.append(document.createElement('span'));
+  }
+  const auroraBars = aurora ? [...aurora.children] : [];
+  let auroraDrift = 0;
+  let auroraShift = 0;
   const scrollProgress = document.createElement('div');
   scrollProgress.className = 'sona-scroll-progress';
   scrollProgress.setAttribute('aria-hidden', 'true');
   document.body.append(scrollProgress);
   if (aurora && !reduceMotion) {
-    const mesh = { x: 50, y: 26, targetX: 50, targetY: 26, moving: false };
-    const drawMesh = () => {
-      mesh.x += (mesh.targetX - mesh.x) * .085;
-      mesh.y += (mesh.targetY - mesh.y) * .085;
-      aurora.style.setProperty('--sona-mesh-x', `${mesh.x.toFixed(2)}%`);
-      aurora.style.setProperty('--sona-mesh-y', `${mesh.y.toFixed(2)}%`);
-      if (Math.abs(mesh.targetX - mesh.x) + Math.abs(mesh.targetY - mesh.y) > .04) {
-        requestAnimationFrame(drawMesh);
+    const auroraStart = performance.now();
+    const drawAuroraBars = now => {
+      const time = (now - auroraStart) / 1000;
+      auroraBars.forEach((bar, index) => {
+        const position = index / Math.max(1, auroraBars.length - 1);
+        const arch = Math.sin(position * Math.PI);
+        const primaryWave = Math.sin(time * .62 + index * .71) * .055;
+        const secondaryWave = Math.sin(time * .37 - index * .43) * .032;
+        const scale = Math.max(.12, Math.min(1, .12 + arch * .82 + primaryWave + secondaryWave));
+        bar.style.setProperty('--aurora-scale', scale.toFixed(3));
+        bar.style.setProperty('transform', `translate3d(${auroraDrift.toFixed(2)}px,${auroraShift.toFixed(2)}px,0) scaleY(${scale.toFixed(3)})`, 'important');
+      });
+      requestAnimationFrame(drawAuroraBars);
+    };
+    requestAnimationFrame(drawAuroraBars);
+
+    const horizon = { x: 50, drift: 0, targetX: 50, targetDrift: 0, moving: false };
+    const drawHorizon = () => {
+      horizon.x += (horizon.targetX - horizon.x) * .075;
+      horizon.drift += (horizon.targetDrift - horizon.drift) * .075;
+      auroraDrift = horizon.drift;
+      aurora.style.setProperty('--sona-horizon-x', `${horizon.x.toFixed(2)}%`);
+      aurora.style.setProperty('--sona-horizon-drift', `${horizon.drift.toFixed(2)}px`);
+      if (Math.abs(horizon.targetX - horizon.x) + Math.abs(horizon.targetDrift - horizon.drift) > .04) {
+        requestAnimationFrame(drawHorizon);
       } else {
-        mesh.moving = false;
+        horizon.moving = false;
       }
     };
     document.addEventListener('pointermove', event => {
       if (event.pointerType !== 'mouse') return;
-      mesh.targetX = Math.max(8, Math.min(92, event.clientX / innerWidth * 100));
-      mesh.targetY = Math.max(8, Math.min(86, event.clientY / innerHeight * 100));
-      if (!mesh.moving) {
-        mesh.moving = true;
-        requestAnimationFrame(drawMesh);
+      const pointerX = Math.max(8, Math.min(92, event.clientX / innerWidth * 100));
+      horizon.targetX = pointerX;
+      horizon.targetDrift = (pointerX - 50) * .18;
+      if (!horizon.moving) {
+        horizon.moving = true;
+        requestAnimationFrame(drawHorizon);
       }
     }, { passive: true });
   }
@@ -89,7 +113,10 @@
     const maximum = Math.max(1, document.documentElement.scrollHeight - innerHeight);
     const progress = Math.max(0, Math.min(1, scrollY / maximum));
     scrollProgress.style.setProperty('--sona-scroll-progress', progress);
-    if (aurora && !reduceMotion) aurora.style.setProperty('--sona-mesh-shift', `${Math.min(70, scrollY * .035)}px`);
+    if (aurora && !reduceMotion) {
+      auroraShift = Math.min(48, scrollY * .024);
+      aurora.style.setProperty('--sona-horizon-shift', `${auroraShift}px`);
+    }
   };
   addEventListener('scroll', updateScrollMotion, { passive: true });
   addEventListener('resize', updateScrollMotion, { passive: true });
