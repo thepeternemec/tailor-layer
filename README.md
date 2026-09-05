@@ -23,6 +23,7 @@ The supply chain for agents is larger than package dependencies. Markdown can re
 Tailor Layer focuses on the decision between **“this integration looks useful”** and **“let’s allow it to run.”** It helps answer:
 
 - Which behavior should block installation?
+- What can this agent actually do if it receives authority?
 - What file and line produced the finding?
 - What should the maintainer edit?
 - Which hosts can receive data?
@@ -71,19 +72,23 @@ The scan result is a connected decision record—not a dashboard score. Evidence
 
 Every supported finding can include:
 
+- a capability map for instructions, execution, workspace access, credentials, network, declared authority, and release integrity
 - a transparent severity and score impact
 - the exact GitHub file and line
+- runtime, manifest, automation, documentation, test, or example context
 - the matched source context
 - a plain-language explanation of the risk
 - a specific remediation
 - a direct GitHub edit link
 - a copy-ready safer implementation pattern
 
+Repeated evidence is grouped into one change with every related source location attached. A review-coverage panel reports how many eligible files were readable and which artifact types were inspected, so a partial browser scan cannot look like a complete repository audit.
+
 After review, Tailor Layer can generate `.tailor-layer/first-run.yaml` with the reviewed revision, isolation profile, approved hosts, scoped authority, verification steps, and cleanup expectations. The policy is portable documentation for your runner, sandbox, or CI system; it does not enforce itself.
 
 ## Transparent scoring
 
-The scanner begins at 100 and deducts once per distinct review category:
+The scanner begins at 100 and deducts once per distinct review category. Before applying a weight, Tailor Layer classifies where the behavior lives. Test helpers, examples, and commented command samples remain visible evidence but are not treated as equivalent to runtime-reachable authority.
 
 | Severity | Impact | Expected decision |
 | --- | ---: | --- |
@@ -92,7 +97,20 @@ The scanner begins at 100 and deducts once per distinct review category:
 | Medium | −7 | Review before production |
 | Informational | 0 | Verify the boundary |
 
-Critical and high findings also impose score ceilings so a large number cannot conceal an urgent issue. The score prioritizes review; the source evidence remains authoritative.
+Critical and high findings also impose score ceilings so a large number cannot conceal an urgent issue. Repeated matches are grouped instead of turning the result into a wall of duplicate warnings. The score prioritizes review; the source evidence remains authoritative.
+
+## Repository selection and coverage
+
+The browser reviewer prioritizes up to 90 readable text artifacts (350 KB each) in this order:
+
+1. Agent instructions and Markdown runbooks such as `AGENTS.md`, `SKILL.md`, `CLAUDE.md`, and `README.md`
+2. Package and container manifests
+3. CI workflows and automation
+4. Shell and setup scripts
+5. Configuration
+6. Application source
+
+Generated output, vendored dependencies, lockfiles, snapshots, and binaries are excluded. Supported source extensions include JavaScript, TypeScript, Python, Ruby, PHP, Go, Rust, Java, Kotlin, Swift, shell, and PowerShell.
 
 ## Run locally
 
@@ -112,6 +130,7 @@ Open [http://localhost:4173](http://localhost:4173). Repository scans read publi
 | --- | --- |
 | `index.html` | Application shell, dialogs, sample data, and accessibility structure |
 | `unified-shell.css` | Focused workspace layout and responsive visual system |
+| `ui-shell.js` | Dialog lifecycle, focus return, and shared interface controls |
 | `scanner-review.js` | Repository retrieval, rules, scoring, evidence, and suggested edits |
 | `first-run-guardrails.js` | Version pinning, host review, authority scoping, and YAML export |
 | `drift-review.js` | Introduced, resolved, and stable behavior between artifact versions |

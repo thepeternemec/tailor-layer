@@ -399,13 +399,21 @@
     state.artifact = detail.repo || state.artifact;
     state.reviewedRef = detail.revision || '';
     const discovered = new Set();
-    (detail.findings || []).forEach(finding => {
-      const matches = String(finding.excerpt || '').match(hostPattern) || [];
-      matches.forEach(value => {
-        const candidate = value.replace(/[),.;!?]+$/, '');
-        try { discovered.add(new URL(candidate).host.toLowerCase()); } catch {}
+    if (Array.isArray(detail.hosts)) {
+      detail.hosts.forEach(host => {
+        const normalized = String(host || '').toLowerCase();
+        if (/^[a-z0-9.-]+$/i.test(normalized) && normalized.includes('.')) discovered.add(normalized);
       });
-    });
+    } else {
+      (detail.findings || []).forEach(finding => {
+        const matches = String(finding.matched || finding.excerpt || '').match(hostPattern) || [];
+        matches.forEach(value => {
+          const parsed = value.match(/^https?:\/\/(?:[^/@\s]+@)?(\[[^\]]+\]|[a-z0-9.-]+)(?::\d+)?/i);
+          const host = (parsed?.[1] || '').replace(/^\[|\]$/g, '').toLowerCase();
+          if (host && !/^(?:localhost|0\.0\.0\.0|127(?:\.\d{1,3}){3})$/.test(host)) discovered.add(host);
+        });
+      });
+    }
     state.hosts = [...discovered];
     state.allowedHosts.clear();
     const context = $('#guardrail-context');
